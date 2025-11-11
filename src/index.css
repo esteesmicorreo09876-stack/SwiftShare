@@ -10,21 +10,377 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
   color: #333;
 }
 
-button {
-  cursor: pointer;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  background-color: #007bff;
+#root {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.loading {
+  font-size: 18px;
   color: white;
+  font-weight: 600;
+}
+
+/* Auth Styles */
+.auth-container {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-container h1 {
+  font-size: 28px;
+  margin-bottom: 10px;
+  color: #667eea;
+  text-align: center;
+}
+
+.auth-container p {
+  text-align: center;
+  color: #666;
+  margin-bottom: 30px;
   font-size: 14px;
-  transition: background-color 0.3s;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 14px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+button {
+  width: 100%;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 button:hover {
-  background-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.toggle-auth {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #666;
+}
+
+.toggle-auth button {
+  background: none;
+  color: #667eea;
+  padding: 0;
+  font-weight: 600;
+  text-decoration: underline;
+  margin-left: 5px;
+  width: auto;
+  box-shadow: none;
+}
+
+.toggle-auth button:hover {
+  transform: none;
+  color: #764ba2;
+}
+
+/* Upload Styles */
+.upload-container {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.4s ease-out;
+}
+
+.upload-container h1 {
+  font-size: 28px;
+  margin-bottom: 10px;
+  color: #667eea;
+  text-align: center;
+}
+
+.upload-container .welcome {
+  text-align: center;
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 14px;
+}
+
+.file-input-wrapper {
+  margin-bottom: 20px;
+}
+
+.file-input-wrapper input[type="file"] {
+  display: none;
+}
+
+.file-input-label {
+  display: block;
+  padding: 30px;
+  border: 2px dashed #667eea;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: #f8f9ff;
+}
+
+.file-input-label:hover {
+  border-color: #764ba2;
+  background: #f0f2ff;
+}
+
+.file-input-label p {
+  color: #667eea;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.file-input-label span {
+  color: #999;
+  font-size: 14px;
+  display: block;
+}
+
+.selected-files {
+  margin: 20px 0;
+  padding: 15px;
+  background: #f8f9ff;
+  border-radius: 6px;
+}
+
+.selected-files p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.file-list {
+  list-style: none;
+}
+
+.file-list li {
+  padding: 8px 0;
+  color: #333;
+  font-size: 14px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.file-list li:last-child {
+  border-bottom: none;
+}
+
+.file-list li::before {
+  content: "📄 ";
+  margin-right: 8px;
+}
+
+.zip-name-input {
+  margin: 20px 0;
+}
+
+.zip-name-input input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.share-link {
+  margin-top: 20px;
+  padding: 15px;
+  background: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  border-radius: 6px;
+}
+
+.share-link p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.share-link .link {
+  background: white;
+  padding: 10px;
+  border-radius: 4px;
+  word-break: break-all;
+  font-size: 12px;
+  color: #667eea;
+  margin-bottom: 10px;
+  border: 1px solid #e0e0e0;
+}
+
+.share-link .expires {
+  font-size: 12px;
+  color: #999;
+}
+
+.error {
+  padding: 15px;
+  background: #ffebee;
+  border-left: 4px solid #f44336;
+  border-radius: 6px;
+  color: #c62828;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.success {
+  padding: 15px;
+  background: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  border-radius: 6px;
+  color: #2e7d32;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.logout-btn {
+  margin-top: 20px;
+  background: #f44336;
+}
+
+.logout-btn:hover {
+  box-shadow: 0 5px 20px rgba(244, 67, 54, 0.4);
+}
+
+/* Download Styles */
+.download-container {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.4s ease-out;
+  text-align: center;
+}
+
+.download-container h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #667eea;
+}
+
+.download-info {
+  background: #f8f9ff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.download-info p {
+  margin: 10px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.download-info .filename {
+  font-weight: 600;
+  color: #333;
+  font-size: 16px;
+  word-break: break-all;
+}
+
+.download-info .downloads {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.download-info .expires {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+.expired-message {
+  padding: 20px;
+  background: #ffebee;
+  border-radius: 8px;
+  color: #c62828;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .auth-container,
+  .upload-container,
+  .download-container {
+    padding: 30px 20px;
+  }
+
+  .auth-container h1,
+  .upload-container h1,
+  .download-container h2 {
+    font-size: 24px;
+  }
+
+  .file-input-label {
+    padding: 20px;
+  }
 }
