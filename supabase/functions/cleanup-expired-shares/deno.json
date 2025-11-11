@@ -1,0 +1,8 @@
+{
+  "tasks": {
+    "start": "deno run -A --no-lock supabase/functions/cleanup-expired-shares/index.ts"
+  },
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.38.0"
+  }
+}
