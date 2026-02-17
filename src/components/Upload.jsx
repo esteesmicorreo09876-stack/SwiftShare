@@ -2,49 +2,63 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { createShareZip } from '../lib/fileUtils'
 
-export function Upload({ user }) {
+export function Upload({ user, onLogout }) {
   const [files, setFiles] = useState([])
-  const [zipName, setZipName] = useState('archivos')
+  const [zipName, setZipName] = useState('')
   const [uploading, setUploading] = useState(false)
   const [shareLink, setShareLink] = useState('')
   const [expiresAt, setExpiresAt] = useState('')
 
   async function handleUpload(e) {
     e.preventDefault()
-    if (!files.length || !zipName.trim()) return
+    if (!files.length) {
+      alert('Por favor selecciona archivos')
+      return
+    }
 
     setUploading(true)
     try {
+      console.log('Iniciando proceso de subida para el usuario:', user.id)
       const zipBlob = await createShareZip(files)
-      const fileName = `${zipName}-${Date.now()}.zip`
-      const shareId = Math.random().toString(36).substr(2, 9)
+      const finalZipName = (zipName.trim() || 'archivos-compartidos') + '.zip'
+      const shareCode = Math.random().toString(36).slice(2, 10)
+      const fileName = `${Date.now()}-${finalZipName}`
+      const filePath = `shares/${shareCode}/${fileName}`
 
-      const { error: uploadError } = await supabase.storage
+      console.log('Subiendo a Storage:', filePath)
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('shared-files')
-        .upload(`shares/${shareId}/${fileName}`, zipBlob)
+        .upload(filePath, zipBlob)
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Detalles del error de Storage:', uploadError)
+        throw new Error(`[Storage] ${uploadError.message}`)
+      }
 
       const expiryTime = new Date(Date.now() + 24 * 60 * 60 * 1000)
+      console.log('Insertando en DB:', { shareCode, userId: user.id, filePath })
       const { error: dbError } = await supabase.from('shares').insert([
         {
-          share_id: shareId,
           user_id: user.id,
-          zip_file_path: `shares/${shareId}/${fileName}`,
-          zip_filename: fileName,
+          zip_file_path: filePath,
+          zip_filename: finalZipName,
           original_files_count: files.length,
           expires_at: expiryTime.toISOString(),
+          share_code: shareCode,
         },
       ])
 
-      if (dbError) throw dbError
+      if (dbError) {
+        console.error('Detalles del error de Base de Datos:', dbError)
+        throw new Error(`[Database] ${dbError.message} `)
+      }
 
-      setShareLink(`${window.location.origin}/download/${shareId}`)
+      setShareLink(`${window.location.origin}/download/${shareCode}`)
       setExpiresAt(expiryTime.toLocaleString())
       setFiles([])
-      setZipName('archivos')
+      setZipName('')
     } catch (error) {
-      alert('Error al subir: ' + error.message)
+      alert('Error al procesar la subida: ' + error.message)
     } finally {
       setUploading(false)
     }
@@ -52,48 +66,72 @@ export function Upload({ user }) {
 
   return (
     <div className="upload-container">
-      <h2>Subir Archivos</h2>
-      
+      <div className="header">
+        <h1>SwiftShare</h1>
+        <button onClick={onLogout} className="logout-link">Cerrar sesión</button>
+      </div>
+
       {!shareLink ? (
-        <form onSubmit={handleUpload} className="upload-form">
-          <div className="input-group">
-            <label>Nombre del ZIP (sin extensión):</label>
-            <input
-              type="text"
-              value={zipName}
-              onChange={(e) => setZipName(e.target.value)}
-              placeholder="Ej: mi-proyecto"
-              required
-            />
-          </div>
+        <div className="upload-card">
+          <p className="welcome">Hola, {user.email?.split('@')[0]}</p>
+          <form onSubmit={handleUpload}>
+            <div className="file-input-wrapper">
+              <input
+                type="file"
+                id="file-input"
+                multiple
+                onChange={(e) => setFiles(Array.from(e.target.files))}
+                disabled={uploading}
+              />
+              <label htmlFor="file-input" className="file-input-label">
+                <p>Click para seleccionar archivos</p>
+                <span>O arrastra y suelta aquí</span>
+              </label>
+            </div>
 
-          <div className="input-group">
-            <label>Selecciona archivos:</label>
-            <input
-              type="file"
-              multiple
-              onChange={(e) => setFiles(Array.from(e.target.files))}
-              disabled={uploading}
-            />
             {files.length > 0 && (
-              <p className="file-count">{files.length} archivo(s) seleccionado(s)</p>
+              <div className="selected-files">
+                <p>{files.length} archivos seleccionados:</p>
+                <ul className="file-list">
+                  {files.slice(0, 5).map((f, i) => (
+                    <li key={i}>{f.name}</li>
+                  ))}
+                  {files.length > 5 && <li>...y {files.length - 5} más</li>}
+                </ul>
+              </div>
             )}
-          </div>
 
-          <button type="submit" disabled={uploading || !files.length}>
-            {uploading ? 'Comprimiendo y subiendo...' : 'Crear enlace de descarga'}
-          </button>
-        </form>
+            <div className="form-group zip-name-input">
+              <label>Nombre personalizado para el ZIP (opcional):</label>
+              <input
+                type="text"
+                value={zipName}
+                onChange={(e) => setZipName(e.target.value)}
+                placeholder="mis-archivos"
+              />
+            </div>
+
+            <button type="submit" disabled={uploading || !files.length} className="primary-btn">
+              {uploading ? 'Procesando...' : 'Crear enlace de descarga'}
+            </button>
+          </form>
+        </div>
       ) : (
         <div className="share-result">
-          <h3>¡Enlace creado!</h3>
-          <p>Comparte este enlace (válido por 24 horas):</p>
-          <input type="text" value={shareLink} readOnly className="share-link" />
-          <button onClick={() => navigator.clipboard.writeText(shareLink)}>
-            Copiar enlace
-          </button>
+          <div className="success-icon">✓</div>
+          <h3>¡Listo para compartir!</h3>
+          <p>Tus archivos estarán disponibles durante 24 horas.</p>
+          <div className="link-box">
+            <input type="text" value={shareLink} readOnly className="share-link-input" />
+            <button onClick={() => {
+              navigator.clipboard.writeText(shareLink)
+              alert('Enlace copiado al portapapeles')
+            }}>
+              Copiar
+            </button>
+          </div>
           <p className="expiry">Expira: {expiresAt}</p>
-          <button onClick={() => { setShareLink(''); setExpiresAt(''); }} className="new-upload">
+          <button onClick={() => { setShareLink(''); setExpiresAt(''); }} className="secondary-btn">
             Subir más archivos
           </button>
         </div>

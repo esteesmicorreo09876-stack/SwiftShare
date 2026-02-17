@@ -1,29 +1,33 @@
 import { useState, useEffect } from 'react'
+import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
 export function Download() {
-  const [shareId, setShareId] = useState(null)
+  const { shareCode } = useParams()
   const [share, setShare] = useState(null)
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
   const [error, setError] = useState('')
+  const [downloadError, setDownloadError] = useState('')
 
   useEffect(() => {
-    const id = window.location.pathname.split('/').pop()
-    setShareId(id)
-    loadShare(id)
-  }, [])
+    if (shareCode) {
+      loadShare(shareCode)
+    }
+  }, [shareCode])
 
-  async function loadShare(id) {
+  async function loadShare(code) {
     try {
+
       const { data, error: fetchError } = await supabase
         .from('shares')
         .select('*')
-        .eq('share_id', id)
+        .eq('share_code', code)
+        .eq('is_deleted', false)
         .single()
 
       if (fetchError || !data) {
-        throw new Error('Enlace no encontrado')
+        throw new Error('Enlace no encontrado o enlace incorrecto')
       }
 
       if (new Date(data.expires_at) < new Date()) {
@@ -40,6 +44,8 @@ export function Download() {
 
   async function handleDownload() {
     setDownloading(true)
+    setDownloadError('')
+
     try {
       const { data, error: dlError } = await supabase.storage
         .from('shared-files')
@@ -51,29 +57,53 @@ export function Download() {
       const a = document.createElement('a')
       a.href = url
       a.download = share.zip_filename
+      document.body.appendChild(a)
       a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
 
-      await supabase.from('shares').update({ download_count: (share.download_count || 0) + 1 }).eq('id', share.id)
+      // Actualizar contador de descargas (RPC)
+      const { error: rpcError } = await supabase.rpc('increment_download_count', {
+        p_share_code: shareCode,
+      })
+
+      if (!rpcError) {
+        setShare(prev => ({ ...prev, download_count: (prev.download_count || 0) + 1 }))
+      } else {
+        console.error('increment_download_count failed:', rpcError)
+      }
     } catch (err) {
-      alert('Error: ' + err.message)
+      setDownloadError('Error al descargar: ' + err.message)
+
     } finally {
       setDownloading(false)
     }
   }
 
-  if (loading) return <div><p>Cargando...</p></div>
-  if (error) return <div><p>{error}</p></div>
+  if (loading) return <div className="loading">Consultando enlace...</div>
 
   return (
     <div className="download-container">
-      {share && (
-        <div>
-          <h2>{share.zip_filename}</h2>
-          <p>Archivos: {share.original_files_count}</p>
-          <p>Descargas: {share.download_count || 0}</p>
-          <button onClick={handleDownload} disabled={downloading}>
-            {downloading ? 'Descargando...' : 'Descargar'}
+      {error ? (
+        <div className="error-card">
+          <div className="expired-message">{error}</div>
+          <Link to="/" className="btn">Ir al inicio</Link>
+        </div>
+      ) : share && (
+        <div className="download-card">
+          <h2>Archivo listo para descargar</h2>
+          <div className="download-info">
+            <p className="filename">{share.zip_filename}</p>
+            <p>Archivos incluidos: <strong>{share.original_files_count}</strong></p>
+            <p className="downloads">Descargas: {share.download_count || 0}</p>
+            <p className="expires">Expira el: {new Date(share.expires_at).toLocaleString()}</p>
+          </div>
+          <button onClick={handleDownload} disabled={downloading} className="primary-btn">
+            {downloading ? 'Descargando...' : 'Descargar ZIP'}
           </button>
+          {downloadError && (
+            <p className="download-error">{downloadError}</p>
+          )}
         </div>
       )}
     </div>

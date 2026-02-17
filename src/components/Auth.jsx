@@ -15,14 +15,17 @@ export function Auth({ onAuthSuccess }) {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email, password })
+        const { data, error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
-        alert('Revisa tu correo para confirmar tu cuenta')
+        if (data.user) {
+          alert('Revisa tu correo para confirmar tu cuenta')
+          onAuthSuccess(data.user)
+        }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
+        onAuthSuccess(data.user)
       }
-      onAuthSuccess()
     } catch (err) {
       setError(err.message)
     } finally {
@@ -36,31 +39,39 @@ export function Auth({ onAuthSuccess }) {
         <h1>SwiftShare</h1>
         <p>Comparte archivos temporalmente</p>
         <form onSubmit={handleAuth}>
-          <input
-            type="email"
-            placeholder="Correo electrónico"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className="form-group">
+            <label>Correo electrónico</label>
+            <input
+              type="email"
+              placeholder="tu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Contraseña</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
           {error && <p className="error">{error}</p>}
           <button type="submit" disabled={loading}>
             {loading ? 'Cargando...' : isSignUp ? 'Registrarse' : 'Iniciar Sesión'}
           </button>
         </form>
-        <button
-          className="toggle-btn"
-          onClick={() => setIsSignUp(!isSignUp)}
-        >
-          {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
-        </button>
+        <div className="toggle-auth">
+          <p>
+            {isSignUp ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}
+            <button onClick={() => setIsSignUp(!isSignUp)}>
+              {isSignUp ? 'Inicia sesión' : 'Regístrate'}
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   )
