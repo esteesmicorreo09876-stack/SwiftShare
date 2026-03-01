@@ -40,7 +40,7 @@ export function Download() {
     } finally {
       setLoading(false)
     }
-  }
+  }     
 
   async function handleDownload() {
     setDownloading(true)

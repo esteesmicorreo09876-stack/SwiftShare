@@ -15,19 +15,38 @@ export function Auth({ onAuthSuccess }) {
 
     try {
       if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({ email, password })
+        // REGISTRO (email/password)
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        })
         if (error) throw error
-        if (data.user) {
-          alert('Revisa tu correo para confirmar tu cuenta')
+
+        // Si "Confirm email" está OFF, normalmente tendrás sesión inmediata
+        if (data?.session && data?.user) {
           onAuthSuccess(data.user)
+        } else if (data?.user) {
+          // Caso: usuario creado pero sin sesión (p.ej. si alguna config obliga confirmación)
+          setError('Cuenta creada. Ahora inicia sesión para continuar.')
+        } else {
+          setError('No se pudo crear la cuenta. Intenta de nuevo.')
         }
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+        // LOGIN (email/password)
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
         if (error) throw error
-        onAuthSuccess(data.user)
+
+        if (data?.session && data?.user) {
+          onAuthSuccess(data.user)
+        } else {
+          setError('No se pudo iniciar sesión. Intenta de nuevo.')
+        }
       }
     } catch (err) {
-      setError(err.message)
+      setError(err?.message || 'Ocurrió un error. Intenta de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -38,6 +57,7 @@ export function Auth({ onAuthSuccess }) {
       <div className="auth-card">
         <h1>SwiftShare</h1>
         <p>Comparte archivos temporalmente</p>
+
         <form onSubmit={handleAuth}>
           <div className="form-group">
             <label>Correo electrónico</label>
@@ -47,8 +67,10 @@ export function Auth({ onAuthSuccess }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
             />
           </div>
+
           <div className="form-group">
             <label>Contraseña</label>
             <input
@@ -57,17 +79,27 @@ export function Auth({ onAuthSuccess }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete={isSignUp ? 'new-password' : 'current-password'}
             />
           </div>
+
           {error && <p className="error">{error}</p>}
+
           <button type="submit" disabled={loading}>
             {loading ? 'Cargando...' : isSignUp ? 'Registrarse' : 'Iniciar Sesión'}
           </button>
         </form>
+
         <div className="toggle-auth">
           <p>
-            {isSignUp ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}
-            <button onClick={() => setIsSignUp(!isSignUp)}>
+            {isSignUp ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp)
+                setError('')
+              }}
+            >
               {isSignUp ? 'Inicia sesión' : 'Regístrate'}
             </button>
           </p>
